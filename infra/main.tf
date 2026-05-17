@@ -54,6 +54,15 @@ resource "aws_ecs_task_definition" "app" {
       containerPort = 8000
       protocol      = "tcp"
     }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/autodeploy"
+        "awslogs-region"        = "sa-east-1"
+        "awslogs-stream-prefix" = "ecs"
+        "awslogs-create-group"  = "true"
+      }
+    }
   }])
 }
 
@@ -69,4 +78,18 @@ resource "aws_ecs_service" "app" {
     security_groups  = [aws_security_group.ecs.id]
     assign_public_ip = true
   }
+}
+
+resource "aws_route_table" "main" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+}
+
+resource "aws_route_table_association" "main" {
+  subnet_id      = aws_subnet.main.id
+  route_table_id = aws_route_table.main.id
 }
