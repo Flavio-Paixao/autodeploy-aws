@@ -1,0 +1,40 @@
+﻿name: Deploy AutoDeploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: sa-east-1
+
+      - name: Login no ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build e Push da imagem
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/autodeploy:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/autodeploy:$IMAGE_TAG
+
+      - name: Deploy no ECS
+        run: |
+          aws ecs update-service \
+            --cluster autodeploy-cluster \
+            --service autodeploy-service \
+            --force-new-deployment \
+            --region sa-east-1

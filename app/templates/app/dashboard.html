@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AutoDeploy — Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0e17;
+      --surface: #111827;
+      --border:  #1e2d45;
+      --orange:  #f97316;
+      --blue:    #38bdf8;
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(30,45,69,0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,45,69,0.25) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 0;
+      background: rgba(10,14,23,0.95);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-family: 'Space Mono', monospace; font-size: 14px; color: var(--muted); letter-spacing: 1px; }
+    .nav-logo span { color: var(--orange); }
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    .nav-status { display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.6); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .status-text { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--green); }
+    .btn-logout {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted); background: transparent;
+      border: 1px solid var(--border);
+      padding: 5px 12px; cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { color: var(--red); border-color: var(--red); }
+
+    /* HERO */
+    .hero { padding: 60px 0 40px; }
+    .hero-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--orange); margin-bottom: 12px; }
+    .hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(32px, 6vw, 56px); font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 12px; }
+    .hero h1 span { color: var(--orange); }
+    .hero p { font-size: 15px; color: var(--muted); }
+
+    /* CARDS */
+    .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 40px 0; }
+    .card { background: var(--surface); border: 1px solid var(--border); padding: 24px; transition: border-color 0.2s; }
+    .card:hover { border-color: var(--orange); }
+    .card-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .card-value { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 4px; }
+    .card-value.green { color: var(--green); }
+    .card-value.orange { color: var(--orange); }
+    .card-value.blue { color: var(--blue); }
+    .card-sub { font-size: 11px; color: var(--muted); }
+
+    /* DIVIDER */
+    .divider { height: 1px; background: var(--border); margin: 40px 0; }
+    .section-label { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; }
+    .section-accent { height: 2px; width: 48px; background: var(--orange); margin-bottom: 16px; }
+    .section-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 24px; }
+
+    /* TABLE */
+    .table { width: 100%; border-collapse: collapse; }
+    .table th { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .table td { font-size: 13px; color: var(--text); padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .table tr:last-child td { border-bottom: none; }
+    .table tr:hover td { background: rgba(255,255,255,0.02); }
+    .method { font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 4px; }
+    .method.get { color: var(--green); border: 1px solid rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+    .method.post { color: var(--blue); border: 1px solid rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+    .path { font-family: 'Space Mono', monospace; color: var(--blue); font-size: 13px; }
+
+    /* DEPLOY */
+    .deploy-status { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; }
+    .deploy-status.success { color: var(--green); border: 1px solid rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+    .deploy-status.failed { color: var(--red); border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); }
+    .deploy-status.running { color: var(--orange); border: 1px solid rgba(249,115,22,0.3); background: rgba(249,115,22,0.08); }
+    .commit { font-size: 12px; color: var(--muted); }
+    .version-tag { font-family: 'Space Mono', monospace; color: var(--orange); }
+
+    /* DEPLOY BUTTON */
+    .btn-deploy {
+      background: transparent;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+    }
+    .btn-deploy:hover { background: var(--orange); color: var(--bg); }
+    .btn-deploy:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .deploy-msg { font-size: 12px; padding: 10px 14px; margin-bottom: 20px; display: none; }
+    .deploy-msg.success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--green); }
+    .deploy-msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+
+    /* INFO */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-item { background: var(--surface); border: 1px solid var(--border); padding: 20px 24px; }
+    .info-key { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .info-value { font-size: 14px; color: var(--text); word-break: break-all; }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 24px 0; margin-top: 60px; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; }
+    .footer-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+    .footer-name span { color: var(--orange); }
+    .footer-copy { font-size: 11px; color: var(--muted); }
+
+    .loading { color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 768px) {
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="container">
+      <div class="nav-inner">
+        <span class="nav-logo">auto<span>deploy</span>.aws</span>
+        <div class="nav-right">
+          <div class="nav-status">
+            <div class="status-dot" id="navDot"></div>
+            <span class="status-text" id="navStatus">verificando...</span>
+          </div>
+          <a href="/logout/" class="btn-logout">→ Sair</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- HERO -->
+    <div class="hero">
+      <p class="hero-label">// Sistema de Deploy Automatizado</p>
+      <h1>Auto<span>Deploy</span><br>Dashboard</h1>
+      <p>Monitoramento em tempo real da aplicação rodando no AWS ECS</p>
+    </div>
+
+    <!-- CARDS -->
+    <div class="cards-grid">
+      <div class="card">
+        <p class="card-label">Status</p>
+        <p class="card-value green" id="cardStatus">--</p>
+        <p class="card-sub">aplicação</p>
+      </div>
+      <div class="card">
+        <p class="card-label">Versão</p>
+        <p class="card-value orange" id="cardVersion">--</p>
+        <p class="card-sub">em produção</p>
+      </div>
+      <div class="card">
+        <p class="card-label">Uptime</p>
+        <p class="card-value blue" id="cardUptime">--</p>
+        <p class="card-sub">tempo ativo</p>
+      </div>
+      <div class="card">
+        <p class="card-label">Plataforma</p>
+        <p class="card-value" id="cardPlatform">--</p>
+        <p class="card-sub">sistema</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ENDPOINTS -->
+    <p class="section-label">// Rotas disponíveis</p>
+    <div class="section-accent"></div>
+    <h2 class="section-title">Endpoints da API</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Método</th>
+          <th>Path</th>
+          <th>Descrição</th>
+        </tr>
+      </thead>
+      <tbody id="endpointsBody">
+        <tr><td colspan="3" class="loading">Carregando...</td></tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- DEPLOYS -->
+    <p class="section-label">// Histórico</p>
+    <div class="section-accent"></div>
+    <h2 class="section-title">Últimos Deploys</h2>
+
+    <button class="btn-deploy" id="btnDeploy" onclick="forceDeploy()">→ Forçar Novo Deploy</button>
+    <div class="deploy-msg" id="deployMsg"></div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Versão</th>
+          <th>Commit</th>
+          <th>Data</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="deploysBody">
+        <tr><td colspan="4" class="loading">Carregando...</td></tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- SYSTEM INFO -->
+    <p class="section-label">// Sistema</p>
+    <div class="section-accent"></div>
+    <h2 class="section-title">Informações do Servidor</h2>
+    <div class="info-grid">
+      <div class="info-item">
+        <p class="info-key">Python Version</p>
+        <p class="info-value" id="infoPython">--</p>
+      </div>
+      <div class="info-item">
+        <p class="info-key">Timestamp</p>
+        <p class="info-value" id="infoTimestamp">--</p>
+      </div>
+      <div class="info-item">
+        <p class="info-key">Plataforma</p>
+        <p class="info-value" id="infoPlatform">--</p>
+      </div>
+      <div class="info-item">
+        <p class="info-key">Uptime</p>
+        <p class="info-value" id="infoUptime">--</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <span class="footer-name">Flávio <span>Paixão</span></span>
+        <span class="footer-copy">// autodeploy · aws ecs · docker · terraform · github actions</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function formatUptime(seconds) {
+      if (seconds < 60) return seconds + 's';
+      if (seconds < 3600) return Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's';
+      return Math.floor(seconds / 3600) + 'h ' + Math.floor((seconds % 3600) / 60) + 'm';
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status/');
+        const data = await res.json();
+
+        document.getElementById('navDot').style.background = '#22c55e';
+        document.getElementById('navDot').style.boxShadow = '0 0 8px rgba(34,197,94,0.6)';
+        document.getElementById('navStatus').textContent = 'online';
+        document.getElementById('navStatus').style.color = '#22c55e';
+
+        document.getElementById('cardStatus').textContent = data.status;
+        document.getElementById('cardVersion').textContent = data.version;
+        document.getElementById('cardUptime').textContent = formatUptime(data.uptime_seconds);
+        document.getElementById('cardPlatform').textContent = data.platform;
+
+        document.getElementById('infoPython').textContent = data.python_version;
+        document.getElementById('infoTimestamp').textContent = new Date(data.timestamp).toLocaleString('pt-BR');
+        document.getElementById('infoPlatform').textContent = data.platform;
+        document.getElementById('infoUptime').textContent = formatUptime(data.uptime_seconds);
+
+      } catch (e) {
+        document.getElementById('navDot').style.background = '#ef4444';
+        document.getElementById('navDot').style.boxShadow = '0 0 8px rgba(239,68,68,0.6)';
+        document.getElementById('navStatus').textContent = 'offline';
+        document.getElementById('navStatus').style.color = '#ef4444';
+        document.getElementById('cardStatus').textContent = 'offline';
+        document.getElementById('cardStatus').style.color = '#ef4444';
+      }
+    }
+
+    async function loadEndpoints() {
+      try {
+        const res = await fetch('/api/endpoints/');
+        const data = await res.json();
+        const tbody = document.getElementById('endpointsBody');
+        tbody.innerHTML = data.endpoints.map(e => `
+          <tr>
+            <td><span class="method ${e.method.toLowerCase()}">${e.method}</span></td>
+            <td><span class="path">${e.path}</span></td>
+            <td>${e.description}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        document.getElementById('endpointsBody').innerHTML = '<tr><td colspan="3">Erro ao carregar</td></tr>';
+      }
+    }
+
+    async function loadDeploys() {
+      try {
+        const res = await fetch('/api/deploys/');
+        const data = await res.json();
+        const tbody = document.getElementById('deploysBody');
+        tbody.innerHTML = data.deploys.map(d => `
+          <tr>
+            <td><span class="version-tag">${d.version}</span></td>
+            <td><span class="commit">${d.commit}</span></td>
+            <td>${d.date}</td>
+            <td><span class="deploy-status ${d.status}">${d.status}</span></td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        document.getElementById('deploysBody').innerHTML = '<tr><td colspan="4">Erro ao carregar</td></tr>';
+      }
+    }
+
+    async function forceDeploy() {
+      const btn = document.getElementById('btnDeploy');
+      const msg = document.getElementById('deployMsg');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Iniciando deploy...';
+      msg.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/deploy/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        const data = await res.json();
+
+        msg.style.display = 'block';
+        if (data.status === 'success') {
+          msg.className = 'deploy-msg success';
+          msg.textContent = '✓ ' + data.message;
+          btn.textContent = '✓ Deploy iniciado!';
+        } else {
+          msg.className = 'deploy-msg error';
+          msg.textContent = '✗ ' + data.message;
+          btn.disabled = false;
+          btn.textContent = '→ Forçar Novo Deploy';
+        }
+      } catch (e) {
+        msg.style.display = 'block';
+        msg.className = 'deploy-msg error';
+        msg.textContent = '✗ Erro ao conectar com o servidor';
+        btn.disabled = false;
+        btn.textContent = '→ Forçar Novo Deploy';
+      }
+    }
+
+    loadStatus();
+    loadEndpoints();
+    loadDeploys();
+    setInterval(loadStatus, 30000);
+  </script>
+
+</body>
+</html>
