@@ -146,3 +146,11 @@ def deploy(request):
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     return JsonResponse({"status": "error", "message": "Método não permitido"}, status=405)
 
+def create_admin(request):
+    from django.contrib.auth.models import User
+    from app.models import UserProfile
+    if not User.objects.filter(username='admin').exists():
+        user = User.objects.create_superuser('admin', 'admin@admin.com', 'Admin@123')
+        UserProfile.objects.create(user=user, role='admin')
+        return HttpResponse("Admin criado! Login: admin / Admin@123")
+    return HttpResponse("Admin ja existe!")
