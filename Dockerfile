@@ -11,4 +11,4 @@ EXPOSE 8000
 
 ENV DJANGO_SETTINGS_MODULE=core.settings
 
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+CMD ["sh", "-c", "python manage.py migrate && gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2"]
