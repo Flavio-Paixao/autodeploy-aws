@@ -10,5 +10,4 @@ urlpatterns = [
     path('api/endpoints/', views.endpoints),
     path('api/deploys/', views.deploys),
     path('api/deploy/', views.deploy),
-    path('setup/', views.create_admin),
 ]
